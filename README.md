@@ -59,3 +59,6 @@ Aplikasi inventaris barang sarpras (sarana dan prasarana) untuk mengelola invent
 ## Lisensi
 
 Project ini dibuat untuk memenuhi project UUK SMKN 8 Malang.
+
+
+a
