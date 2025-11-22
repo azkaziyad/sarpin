@@ -44,7 +44,12 @@ export default function LoanHistoryPage() {
     const matchesSearch =
       loan.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
       loan.borrower.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "Semua" || loan.status === statusFilter;
+
+    const normalizedStatusFilter = statusFilter.trim().toLowerCase();
+    const normalizedLoanStatus = loan.status.trim().toLowerCase();
+
+    const matchesStatus = normalizedStatusFilter === "semua" || normalizedLoanStatus === normalizedStatusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
