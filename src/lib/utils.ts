@@ -10,13 +10,14 @@ export interface LoanData {
   id: number;
   item: string;
   borrower: string;
-  borrowDate: string;
-  expectedReturnDate: string;
+  borrowdate: string;
+  expectedreturndate: string; 
   quantity: number;
   purpose: string;
   status: 'Aktif' | 'Dikembalikan';
-  returnDate?: string;
+  returndate: string | null; 
 }
+
 
 // Storage keys
 const LOAN_STORAGE_KEY = 'sarpras_loans';
@@ -58,7 +59,7 @@ export function updateLoanStatus(id: number, status: 'Aktif' | 'Dikembalikan', r
     const loanIndex = loans.findIndex(loan => loan.id === id);
     if (loanIndex !== -1) {
       loans[loanIndex].status = status;
-      if (returnDate) loans[loanIndex].returnDate = returnDate;
+      if (returnDate) loans[loanIndex].returndate = returnDate;
       localStorage.setItem(LOAN_STORAGE_KEY, JSON.stringify(loans));
     }
   } catch (error) {

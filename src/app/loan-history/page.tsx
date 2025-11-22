@@ -23,8 +23,9 @@ export default function LoanHistoryPage() {
       setError(null);
       try {
         const { data, error } = await supabase
-          .from<LoanData>('loans')
-          .select('*');
+  .from<'loans', LoanData>('loans')
+  .select('*');
+
         if (error) throw error;
         if (data) {
           setLoanHistory(data);
@@ -137,8 +138,8 @@ export default function LoanHistoryPage() {
                     <TableRow key={loan.id}>
                       <TableCell className="font-medium">{loan.item}</TableCell>
                       <TableCell>{loan.borrower}</TableCell>
-                      <TableCell>{loan.borrowDate}</TableCell>
-                      <TableCell>{loan.returnDate || "-"}</TableCell>
+                    <TableCell>{loan.borrowdate ? new Date(loan.borrowdate).toLocaleDateString() : ""}</TableCell>
+                    <TableCell>{loan.returndate ? new Date(loan.returndate).toLocaleDateString() : "-"}</TableCell>
                       <TableCell>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
