@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,33 +7,42 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getLoans, LoanData } from "@/lib/utils";
-
-// Mock data
-const mockLoanHistory: LoanData[] = [
-  { id: 1, item: "Proyektor Epson", borrower: "Kelas 10A", borrowDate: "2024-01-10", returnDate: "2024-01-15", status: "Dikembalikan", expectedReturnDate: "2024-01-15", quantity: 1, purpose: "Presentasi" },
-  { id: 2, item: "Laptop Dell", borrower: "Guru Matematika", borrowDate: "2024-01-08", returnDate: "2024-01-14", status: "Dikembalikan", expectedReturnDate: "2024-01-14", quantity: 1, purpose: "Mengajar" },
-  { id: 3, item: "Speaker JBL", borrower: "Kelas 11B", borrowDate: "2024-01-05", returnDate: "2024-01-13", status: "Dikembalikan", expectedReturnDate: "2024-01-13", quantity: 1, purpose: "Acara kelas" },
-  { id: 4, item: "Mikroskop", borrower: "Lab Biologi", borrowDate: "2024-01-12", returnDate: undefined, status: "Aktif", expectedReturnDate: "2024-01-20", quantity: 1, purpose: "Praktikum" },
-  { id: 5, item: "Whiteboard Marker", borrower: "Kelas 9C", borrowDate: "2024-01-11", returnDate: "2024-01-11", status: "Dikembalikan", expectedReturnDate: "2024-01-11", quantity: 5, purpose: "Materi ajar" },
-  { id: 6, item: "Kamera DSLR", borrower: "Kegiatan Ekstrakurikuler", borrowDate: "2024-01-09", returnDate: undefined, status: "Aktif", expectedReturnDate: "2024-01-16", quantity: 1, purpose: "Dokumentasi" },
-];
+import { LoanData } from "@/lib/utils";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function LoanHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [loanHistory, setLoanHistory] = useState<LoanData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedLoans = getLoans();
-    // Combine saved loans with mock data, but prioritize saved loans
-    const combinedLoans = [...mockLoanHistory, ...savedLoans];
-    setLoanHistory(combinedLoans);
+    async function fetchLoans() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase
+          .from<LoanData>('loans')
+          .select('*');
+        if (error) throw error;
+        if (data) {
+          setLoanHistory(data);
+        }
+      } catch (error: any) {
+        setError(error.message || "Gagal mengambil data peminjaman");
+        setLoanHistory([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLoans();
   }, []);
 
   const filteredLoans = loanHistory.filter((loan: LoanData) => {
-    const matchesSearch = loan.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         loan.borrower.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      loan.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      loan.borrower.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "Semua" || loan.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -60,6 +70,7 @@ export default function LoanHistoryPage() {
                   placeholder="Cari berdasarkan nama barang atau peminjam..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={loading}
                 />
               </div>
               <div className="flex gap-2">
@@ -67,6 +78,7 @@ export default function LoanHistoryPage() {
                   variant={statusFilter === "Semua" ? "default" : "outline"}
                   onClick={() => setStatusFilter("Semua")}
                   size="sm"
+                  disabled={loading}
                 >
                   Semua
                 </Button>
@@ -74,6 +86,7 @@ export default function LoanHistoryPage() {
                   variant={statusFilter === "Aktif" ? "default" : "outline"}
                   onClick={() => setStatusFilter("Aktif")}
                   size="sm"
+                  disabled={loading}
                 >
                   Aktif
                 </Button>
@@ -81,6 +94,7 @@ export default function LoanHistoryPage() {
                   variant={statusFilter === "Dikembalikan" ? "default" : "outline"}
                   onClick={() => setStatusFilter("Dikembalikan")}
                   size="sm"
+                  disabled={loading}
                 >
                   Dikembalikan
                 </Button>
@@ -89,47 +103,60 @@ export default function LoanHistoryPage() {
           </CardContent>
         </Card>
 
-        {/* Table */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Daftar Peminjaman</CardTitle>
-            <CardDescription>
-              Menampilkan {filteredLoans.length} dari {loanHistory.length} peminjaman
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Barang</TableHead>
-                  <TableHead>Peminjam</TableHead>
-                  <TableHead>Tanggal Pinjam</TableHead>
-                  <TableHead>Tanggal Kembali</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLoans.map((loan) => (
-                  <TableRow key={loan.id}>
-                    <TableCell className="font-medium">{loan.item}</TableCell>
-                    <TableCell>{loan.borrower}</TableCell>
-                    <TableCell>{loan.borrowDate}</TableCell>
-                    <TableCell>{loan.returnDate || "-"}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        loan.status === "Aktif"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      }`}>
-                        {loan.status}
-                      </span>
-                    </TableCell>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 text-red-600 font-semibold">
+            {error}
+          </div>
+        )}
+
+        {/* Loading Message */}
+        {loading ? (
+          <div className="text-center py-8">Memuat data peminjaman...</div>
+        ) : (
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Daftar Peminjaman</CardTitle>
+              <CardDescription>
+                Menampilkan {filteredLoans.length} dari {loanHistory.length} peminjaman
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Barang</TableHead>
+                    <TableHead>Peminjam</TableHead>
+                    <TableHead>Tanggal Pinjam</TableHead>
+                    <TableHead>Tanggal Kembali</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredLoans.map((loan) => (
+                    <TableRow key={loan.id}>
+                      <TableCell className="font-medium">{loan.item}</TableCell>
+                      <TableCell>{loan.borrower}</TableCell>
+                      <TableCell>{loan.borrowDate}</TableCell>
+                      <TableCell>{loan.returnDate || "-"}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            loan.status === "Aktif"
+                              ? "bg-primary/10 text-primary"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {loan.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
